@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>灰底字描寫本生成器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC&display=swap" rel="stylesheet">
+  <style id="page-style">@page { size: A4 landscape; margin: 0; }</style>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: #e9e9e6;
+      color: #333;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+    }
+    .app { display: flex; height: 100vh; }
+
+    /* ===== 側邊控制面板 ===== */
+    .panel {
+      width: 360px;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: #fff;
+      border-right: 1px solid #d8d8d3;
+      padding: 18px 20px 30px;
+      font-size: 14px;
+    }
+    .panel h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: 1px; }
+    .panel .sub { margin: 0 0 14px; color: #777; font-size: 12.5px; }
+    fieldset {
+      border: 1px solid #e3e3de;
+      border-radius: 10px;
+      padding: 10px 14px 12px;
+      margin: 0 0 14px;
+    }
+    legend { font-weight: 700; padding: 0 6px; font-size: 13.5px; color: #4b5d4a; }
+    label { display: block; margin: 8px 0 4px; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .row > * { flex: 1; }
+    input[type=text], input[type=number], select, textarea {
+      width: 100%;
+      padding: 7px 9px;
+      border: 1px solid #cfcfc9;
+      border-radius: 7px;
+      font: inherit;
+      background: #fff;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 190px;
+      line-height: 1.7;
+      font-family: "Noto Serif TC", "PMingLiU", serif;
+      font-size: 15px;
+    }
+    input[type=range] { width: 100%; }
+    .check { display: flex; align-items: center; gap: 7px; margin: 7px 0; cursor: pointer; }
+    .check input { margin: 0; }
+    .btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .btn {
+      border: 1px solid #b9b9b2;
+      background: #fafaf7;
+      border-radius: 18px;
+      padding: 5px 12px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn:hover { background: #efefe9; }
+    .btn.primary {
+      width: 100%;
+      background: #3e4f3d;
+      color: #fff;
+      border-color: #3e4f3d;
+      border-radius: 9px;
+      padding: 11px;
+      font-size: 15px;
+      margin-top: 4px;
+    }
+    .btn.primary:hover { background: #2f3d2e; }
+    .hint { color: #888; font-size: 12px; margin-top: 5px; line-height: 1.6; }
+    .stats {
+      background: #f3f4ef;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      line-height: 1.7;
+    }
+    .val { float: right; color: #666; font-variant-numeric: tabular-nums; }
+
+    /* ===== 預覽區 ===== */
+    .preview { flex: 1; height: 100vh; overflow: auto; padding: 24px; }
+    .preview-top {
+      display: flex; justify-content: flex-end; align-items: center;
+      gap: 8px; font-size: 13px; margin-bottom: 14px;
+    }
+    .preview-top select { width: auto; }
+    .pages { width: max-content; margin: 0 auto; }
+
+    /* ===== 描寫頁 ===== */
+    .page {
+      width: var(--page-w);
+      height: var(--page-h);
+      padding: 8mm;
+      background: #fff;
+      margin: 0 auto 10mm;
+      box-shadow: 0 3px 16px #0000001c;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .heading {
+      height: 14mm;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6mm;
+      border-bottom: 0.25mm solid #bcbcbc;
+      margin-bottom: 3mm;
+      font-family: "Noto Serif TC", "PMingLiU", serif;
+    }
+    .heading h1 {
+      margin: 0;
+      font-size: 20pt;
+      font-weight: normal;
+      letter-spacing: 2pt;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+    .details { font-size: 11pt; white-space: nowrap; flex-shrink: 0; }
+    .blank {
+      display: inline-block;
+      height: 5mm;
+      border-bottom: 0.2mm solid #999;
+      vertical-align: bottom;
+      margin-right: 4mm;
+    }
+    .pageno { color: #999; font-size: 9pt; margin-left: 2mm; }
+
+    .grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      border-top: 0.2mm solid #dedede;
+      border-left: 0.2mm solid #dedede;
+    }
+    .cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 0.2mm solid #dedede;
+      border-bottom: 0.2mm solid #dedede;
+      overflow: hidden;
+    }
+    .cell::before, .cell::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+    }
+    .cell::before { top: 0; bottom: 0; left: 50%; border-left: 0.15mm dashed #e8e8e8; }
+    .cell::after { left: 0; right: 0; top: 50%; border-top: 0.15mm dashed #e8e8e8; }
+    .guide-mi .cell {
+      background:
+        linear-gradient(to top right, transparent calc(50% - 0.1mm), #efefef calc(50% - 0.1mm), #efefef calc(50% + 0.1mm), transparent calc(50% + 0.1mm)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.1mm), #efefef calc(50% - 0.1mm), #efefef calc(50% + 0.1mm), transparent calc(50% + 0.1mm));
+    }
+    .guide-square .cell::before, .guide-square .cell::after,
+    .guide-none .cell::before, .guide-none .cell::after { display: none; }
+    .guide-none, .guide-none .cell { border-color: transparent; }
+
+    .char {
+      position: relative;
+      z-index: 1;
+      color: var(--gray);
+      font-family: var(--font);
+      font-size: var(--fs);
+      line-height: 1;
+    }
+    .is-vertical .char, .is-vertical .attached {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+    .attached {
+      position: absolute;
+      z-index: 1;
+      right: 3%;
+      bottom: 1%;
+      color: var(--gray);
+      font-family: var(--font);
+      font-size: calc(var(--fs) * 0.6);
+      line-height: 1;
+    }
+
+    /* ===== 列印 ===== */
+    @media print {
+      html, body { background: #fff; height: auto; }
+      .app { display: block; height: auto; }
+      .panel, .preview-top { display: none; }
+      .preview { height: auto; overflow: visible; padding: 0; }
+      .pages { zoom: 1 !important; width: auto; }
+      .page {
+        margin: 0;
+        box-shadow: none;
+        break-after: page;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      .page:last-child { break-after: auto; }
+    }
+    @media (max-width: 800px) {
+      .app { flex-direction: column; height: auto; }
+      .panel { width: 100%; height: auto; border-right: 0; }
+      .preview { height: auto; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <h2>灰底字描寫本生成器</h2>
+    <p class="sub">貼上課文，自動生成 A4 滿版描寫紙</p>
+
+    <fieldset>
+      <legend>內容</legend>
+      <label for="title">標題</label>
+      <input type="text" id="title" value="陋室銘　劉禹錫">
+      <label for="text">文字（可直接貼上整篇課文）</label>
+      <textarea id="text"></textarea>
+      <div class="btns">
+        <button class="btn" data-sample="loushi">範例：陋室銘</button>
+        <button class="btn" data-sample="heart">範例：心經</button>
+        <button class="btn" id="clear">清空</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>版面</legend>
+      <div class="row">
+        <div>
+          <label for="orient">紙張</label>
+          <select id="orient">
+            <option value="landscape">A4 橫式</option>
+            <option value="portrait">A4 直式</option>
+          </select>
+        </div>
+        <div>
+          <label for="dir">書寫方向</label>
+          <select id="dir">
+            <option value="v">直排（右至左）</option>
+            <option value="h">橫排（左至右）</option>
+          </select>
+        </div>
+      </div>
+      <label>格子大小</label>
+      <div class="btns" style="margin-top:0">
+        <button class="btn" data-preset="big">大格</button>
+        <button class="btn" data-preset="mid">中格</button>
+        <button class="btn" data-preset="small">小格</button>
+      </div>
+      <div class="row">
+        <div>
+          <label for="cols">橫向格數</label>
+          <input type="number" id="cols" min="3" max="40" value="20">
+        </div>
+        <div>
+          <label for="rows">縱向格數</label>
+          <input type="number" id="rows" min="3" max="40" value="13">
+        </div>
+      </div>
+      <div class="hint" id="cellInfo"></div>
+      <label for="guide">格線</label>
+      <select id="guide">
+        <option value="tian">田字格</option>
+        <option value="mi">米字格</option>
+        <option value="square">方格</option>
+        <option value="none">無格線</option>
+      </select>
+      <label class="check"><input type="checkbox" id="showHeader" checked>顯示標題列</label>
+      <label class="check"><input type="checkbox" id="showFields" checked>顯示姓名／座號／日期欄</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>字體與灰階</legend>
+      <label for="font">字體</label>
+      <select id="font">
+        <option value="kai">標楷體（系統字型）</option>
+        <option value="wenkai">霞鶩文楷（網路字型）</option>
+        <option value="serif">思源宋體／明體</option>
+        <option value="sans">思源黑體</option>
+      </select>
+      <label for="scale">字的大小 <span class="val" id="scaleVal"></span></label>
+      <input type="range" id="scale" min="50" max="95" value="80">
+      <label for="gray">底字深淺 <span class="val" id="grayVal"></span></label>
+      <input type="range" id="gray" min="120" max="235" value="208">
+      <div class="hint">往右越淡。一般印表機建議 190–215。</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>文字處理</legend>
+      <label class="check"><input type="checkbox" id="keepPunct" checked>保留標點符號（各占一格）</label>
+      <label class="check"><input type="checkbox" id="toFull" checked>半形標點轉全形、“ ”轉「 」</label>
+      <label class="check"><input type="checkbox" id="avoid" checked>行首標點併入上一格（避頭）</label>
+      <label class="check"><input type="checkbox" id="newPara" checked>每段另起一行</label>
+      <label class="check"><input type="checkbox" id="indent">段首空兩格</label>
+      <label for="mode">練習模式</label>
+      <select id="mode">
+        <option value="all">全部灰字描寫</option>
+        <option value="alt">一行描寫、一行空白</option>
+      </select>
+    </fieldset>
+
+    <div class="stats" id="stats"></div>
+    <button class="btn primary" id="print">列印／另存 PDF</button>
+    <div class="hint">列印時請選「縮放 100%」，並關閉「頁首及頁尾」。</div>
+  </aside>
+
+  <main class="preview">
+    <div class="preview-top">
+      預覽縮放
+      <select id="zoom">
+        <option value="0.5">50%</option>
+        <option value="0.75" selected>75%</option>
+        <option value="1">100%</option>
+      </select>
+    </div>
+    <div class="pages" id="pages"></div>
+  </main>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  const SAMPLES = {
+    loushi: {
+      title: "陋室銘　劉禹錫",
+      text: "山不在高，有仙則名。水不在深，有龍則靈。斯是陋室，惟吾德馨。苔痕上階綠，草色入簾青。談笑有鴻儒，往來無白丁。可以調素琴，閱金經。無絲竹之亂耳，無案牘之勞形。南陽諸葛廬，西蜀子雲亭。孔子云：「何陋之有？」"
+    },
+    heart: {
+      title: "般若波羅蜜多心經",
+      text: "觀自在菩薩，行深般若波羅蜜多時，照見五蘊皆空，度一切苦厄。舍利子！色不異空，空不異色；色即是空，空即是色。受想行識，亦復如是。舍利子！是諸法空相，不生不滅，不垢不淨，不增不減。是故空中無色，無受想行識；無眼耳鼻舌身意，無色聲香味觸法；無眼界，乃至無意識界；無無明，亦無無明盡，乃至無老死，亦無老死盡；無苦集滅道，無智亦無得。以無所得故，菩提薩埵，依般若波羅蜜多故，心無罣礙。無罣礙故，無有恐怖，遠離顛倒夢想，究竟涅槃。三世諸佛，依般若波羅蜜多故，得阿耨多羅三藐三菩提。故知般若波羅蜜多，是大神咒，是大明咒，是無上咒，是無等等咒，能除一切苦，真實不虛。故說般若波羅蜜多咒，即說咒曰：揭諦，揭諦，波羅揭諦，波羅僧揭諦，菩提薩婆訶。"
+    }
+  };
+
+  const FONTS = {
+    kai: '"TW-Kai", "BiauKai", "DFKai-SB", "標楷體", "Kaiti TC", "STKaiti", "LXGW WenKai TC", serif',
+    wenkai: '"LXGW WenKai TC", "BiauKai", "DFKai-SB", serif',
+    serif: '"Noto Serif TC", "PMingLiU", "Songti TC", serif',
+    sans: '"Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif'
+  };
+
+  const PRESETS = {
+    landscape: { big: [14, 9], mid: [20, 13], small: [26, 16] },
+    portrait: { big: [10, 13], mid: [13, 18], small: [17, 23] }
+  };
+
+  const PUNCT = /[，。、；：？！「」『』（）《》〈〉…—．·～﹏]/;
+  const CLOSE = /[，。、；：？！」』）》〉]/;
+  const ALL_PUNCT = /[，。、；：？！「」『』（）《》〈〉…—．·～﹏,.;:?!()"'“”‘’]/g;
+
+  function normalize(text, toFull, keepPunct) {
+    text = text.replace(/\r\n?/g, "\n");
+    if (toFull) {
+      const map = { ",": "，", ";": "；", ":": "：", "?": "？", "!": "！", "(": "（", ")": "）" };
+      text = text
+        .replace(/\.{3,}|。{3,}/g, "……")
+        .replace(/[,;:?!()]/g, m => map[m])
+        .replace(/(?<![0-9A-Za-z])\.(?![0-9])/g, "。")
+        .replace(/“/g, "「").replace(/”/g, "」")
+        .replace(/‘/g, "『").replace(/’/g, "』");
+    }
+    if (!keepPunct) text = text.replace(ALL_PUNCT, "");
+    return text;
+  }
+
+  function chunk(tokens, lineLen, avoid) {
+    const out = [];
+    let line = [];
+    for (const t of tokens) {
+      if (line.length === lineLen) {
+        const last = line[line.length - 1];
+        if (avoid && t.c && CLOSE.test(t.c) && last && last.c && !last.p && !PUNCT.test(last.c)) {
+          last.p = t.c;
+          continue;
+        }
+        out.push(line);
+        line = [];
+      }
+      line.push(t);
+    }
+    if (line.length) out.push(line);
+    return out;
+  }
+
+  function readSettings() {
+    return {
+      title: $("title").value.trim(),
+      text: $("text").value,
+      orient: $("orient").value,
+      vertical: $("dir").value === "v",
+      cols: Math.min(40, Math.max(3, parseInt($("cols").value) || 20)),
+      rows: Math.min(40, Math.max(3, parseInt($("rows").value) || 13)),
+      guide: $("guide").value,
+      showHeader: $("showHeader").checked,
+      showFields: $("showFields").checked,
+      font: FONTS[$("font").value],
+      scale: +$("scale").value / 100,
+      gray: +$("gray").value,
+      keepPunct: $("keepPunct").checked,
+      toFull: $("toFull").checked,
+      avoid: $("avoid").checked,
+      newPara: $("newPara").checked,
+      indent: $("indent").checked,
+      alt: $("mode").value === "alt"
+    };
+  }
+
+  function makeHeader(s, pageIndex, pageCount) {
+    const header = document.createElement("header");
+    header.className = "heading";
+    const h1 = document.createElement("h1");
+    h1.textContent = s.title || "　";
+    header.appendChild(h1);
+    const details = document.createElement("div");
+    details.className = "details";
+    if (s.showFields) {
+      details.innerHTML =
+        '姓名：<span class="blank" style="width:28mm"></span>' +
+        '座號：<span class="blank" style="width:12mm"></span>' +
+        '日期：<span class="blank" style="width:26mm;margin-right:0"></span>';
+    }
+    if (pageCount > 1) {
+      const no = document.createElement("span");
+      no.className = "pageno";
+      no.textContent = `${pageIndex + 1} / ${pageCount}`;
+      details.appendChild(no);
+    }
+    header.appendChild(details);
+    return header;
+  }
+
+  function render() {
+    const s = readSettings();
+    const W = s.orient === "landscape" ? 297 : 210;
+    const H = s.orient === "landscape" ? 210 : 297;
+    $("page-style").textContent = `@page { size: A4 ${s.orient}; margin: 0; }`;
+
+    const gridW = W - 16;
+    const gridH = H - 16 - (s.showHeader ? 17 : 0);
+    const cellW = gridW / s.cols;
+    const cellH = gridH / s.rows;
+    const fs = Math.min(cellW, cellH) * s.scale;
+
+    const pages = $("pages");
+    pages.style.setProperty("--page-w", W + "mm");
+    pages.style.setProperty("--page-h", H + "mm");
+    pages.style.setProperty("--fs", fs.toFixed(2) + "mm");
+    pages.style.setProperty("--gray", `rgb(${s.gray},${s.gray},${s.gray})`);
+    pages.style.setProperty("--font", s.font);
+
+    $("cellInfo").textContent =
+      `每格約 ${cellW.toFixed(1)} × ${cellH.toFixed(1)} mm，每頁 ${s.cols * s.rows} 格`;
+    $("scaleVal").textContent = Math.round(s.scale * 100) + "%";
+    $("grayVal").textContent = Math.round((s.gray - 120) / 115 * 100) + "%";
+
+    // 建立字元行
+    const text = normalize(s.text, s.toFull, s.keepPunct);
+    const paras = text.split(/\n+/)
+      .map(p => p.replace(/[ \t\u3000\u00a0]/g, ""))
+      .filter(Boolean);
+    const lineLen = s.vertical ? s.rows : s.cols;
+    const toTokens = str => Array.from(str).map(c => ({ c }));
+    const indentTokens = () => s.indent ? [{ c: "" }, { c: "" }] : [];
+    let lines = [];
+    if (s.newPara) {
+      paras.forEach(p => lines.push(...chunk([...indentTokens(), ...toTokens(p)], lineLen, s.avoid)));
+    } else if (paras.length) {
+      lines = chunk([...indentTokens(), ...toTokens(paras.join(""))], lineLen, s.avoid);
+    }
+    if (s.alt) lines = lines.flatMap(l => [l, []]);
+
+    const perPage = s.vertical ? s.cols : s.rows;
+    const pageCount = Math.max(1, Math.ceil(lines.length / perPage));
+
+    // 統計
+    const all = Array.from(paras.join(""));
+    const punctCount = all.filter(c => PUNCT.test(c)).length;
+    $("stats").innerHTML =
+      `字數：<b>${all.length - punctCount}</b> 字` +
+      (punctCount ? `（另含標點 ${punctCount} 個）` : "") +
+      `<br>共 <b>${pageCount}</b> 頁，${lines.length} ${s.vertical ? "直行" : "橫行"}`;
+
+    // 繪製頁面
+    pages.innerHTML = "";
+    for (let p = 0; p < pageCount; p++) {
+      const page = document.createElement("section");
+      page.className = "page" + (s.vertical ? " is-vertical" : "");
+      if (s.showHeader) page.appendChild(makeHeader(s, p, pageCount));
+
+      const grid = document.createElement("div");
+      grid.className = "grid guide-" + s.guide;
+      grid.style.gridTemplateColumns = `repeat(${s.cols}, minmax(0, 1fr))`;
+      grid.style.gridTemplateRows = `repeat(${s.rows}, minmax(0, 1fr))`;
+
+      const frag = document.createDocumentFragment();
+      for (let li = 0; li < perPage; li++) {
+        const line = lines[p * perPage + li] || [];
+        for (let k = 0; k < lineLen; k++) {
+          const t = line[k];
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          if (s.vertical) {
+            cell.style.gridColumn = s.cols - li;
+            cell.style.gridRow = k + 1;
+          } else {
+            cell.style.gridRow = li + 1;
+            cell.style.gridColumn = k + 1;
+          }
+          if (t && t.c) {
+            const span = document.createElement("span");
+            span.className = "char";
+            span.textContent = t.c;
+            cell.appendChild(span);
+          }
+          if (t && t.p) {
+            const mark = document.createElement("span");
+            mark.className = "attached";
+            mark.textContent = t.p;
+            cell.appendChild(mark);
+          }
+          frag.appendChild(cell);
+        }
+      }
+      grid.appendChild(frag);
+      page.appendChild(grid);
+      pages.appendChild(page);
+    }
+  }
+
+  let timer;
+  const scheduleRender = () => { clearTimeout(timer); timer = setTimeout(render, 120); };
+
+  document.querySelectorAll(".panel input, .panel select, .panel textarea")
+    .forEach(el => el.addEventListener("input", scheduleRender));
+
+  document.querySelectorAll("[data-sample]").forEach(btn =>
+    btn.addEventListener("click", () => {
+      const sample = SAMPLES[btn.dataset.sample];
+      $("title").value = sample.title;
+      $("text").value = sample.text;
+      render();
+    }));
+
+  $("clear").addEventListener("click", () => {
+    $("text").value = "";
+    $("title").value = "";
+    render();
+    $("text").focus();
+  });
+
+  function applyPreset(name) {
+    const [c, r] = PRESETS[$("orient").value][name];
+    $("cols").value = c;
+    $("rows").value = r;
+    render();
+  }
+  document.querySelectorAll("[data-preset]").forEach(btn =>
+    btn.addEventListener("click", () => applyPreset(btn.dataset.preset)));
+  $("orient").addEventListener("change", () => applyPreset("mid"));
+
+  $("zoom").addEventListener("change", e => { $("pages").style.zoom = e.target.value; });
+  $("pages").style.zoom = $("zoom").value;
+
+  $("print").addEventListener("click", () => {
+    render();
+    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => window.print());
+  });
+
+  $("text").value = SAMPLES.loushi.text;
+  render();
+  if (document.fonts) document.fonts.ready.then(render);
+</script>
+</body>
+</html>
