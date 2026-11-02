@@ -6,9 +6,29 @@
   <title>灰底字描寫本生成器</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Iansui&family=Klee+One:wght@400;600&family=LXGW+WenKai+TC&family=Liu+Jian+Mao+Cao&family=Long+Cang&family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC&family=Yuji+Syuku&family=Zhi+Mang+Xing&family=Andika:ital,wght@0,400;0,700;1,400&family=Comic+Neue:wght@400;700&family=Patrick+Hand&family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Playwrite+US+Trad:wght@100..400&family=Noto+Sans:ital,wght@0,400;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style id="page-style">@page { size: A4 landscape; margin: 0; }</style>
   <style>
+    /* ===== 外部開源字型備援與自訂字體定義 ===== */
+    @font-face {
+      font-family: 'Iansui';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: local('Iansui'),
+           local('芫荽'),
+           url('https://cdn.jsdelivr.net/gh/ButTaiwan/iansui@gh-pages/proof/Iansui-Regular.ttf') format('truetype');
+    }
+    @font-face {
+      font-family: 'ChenYuluoyan';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: local('ChenYuluoyan'),
+           local('辰宇落雁體'),
+           url('https://cdn.jsdelivr.net/gh/Chenyu-otf/chenyuluoyan_thin@main/ChenYuluoyan-Thin-Monospaced.ttf') format('truetype');
+    }
+
     * { box-sizing: border-box; }
     html, body { margin: 0; }
     body {
@@ -20,17 +40,53 @@
 
     /* ===== 側邊控制面板 ===== */
     .panel {
-      width: 360px;
+      width: 370px;
       flex-shrink: 0;
       height: 100vh;
       overflow-y: auto;
       background: #fff;
       border-right: 1px solid #d8d8d3;
-      padding: 18px 20px 30px;
+      padding: 16px 18px 30px;
       font-size: 14px;
     }
-    .panel h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: 1px; }
-    .panel .sub { margin: 0 0 14px; color: #777; font-size: 12.5px; }
+    .panel h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: 1px; color: #2e3d2d; }
+    .panel .sub { margin: 0 0 12px; color: #777; font-size: 12.5px; }
+
+    /* ===== 分頁切換器 (Tabs) ===== */
+    .tabs {
+      display: flex;
+      background: #f0f0ed;
+      border-radius: 9px;
+      padding: 3px;
+      margin-bottom: 14px;
+      border: 1px solid #d8d8d3;
+      gap: 3px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border: none;
+      background: transparent;
+      border-radius: 7px;
+      font: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #666;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .tab-btn:hover { color: #333; }
+    .tab-btn.active {
+      background: #fff;
+      color: #2b3b2a;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
     fieldset {
       border: 1px solid #e3e3de;
       border-radius: 10px;
@@ -51,10 +107,15 @@
     }
     textarea {
       resize: vertical;
-      min-height: 190px;
+      min-height: 160px;
       line-height: 1.7;
       font-family: "Noto Serif TC", "PMingLiU", serif;
-      font-size: 15px;
+      font-size: 14px;
+    }
+    #enText {
+      font-family: "Andika", "Comic Neue", "Noto Sans", sans-serif;
+      font-size: 14px;
+      min-height: 160px;
     }
     input[type=range] { width: 100%; }
     .check { display: flex; align-items: center; gap: 7px; margin: 7px 0; cursor: pointer; }
@@ -66,8 +127,9 @@
       border-radius: 18px;
       padding: 5px 12px;
       font: inherit;
-      font-size: 13px;
+      font-size: 12.5px;
       cursor: pointer;
+      transition: background 0.15s;
     }
     .btn:hover { background: #efefe9; }
     .btn.primary {
@@ -78,7 +140,8 @@
       border-radius: 9px;
       padding: 11px;
       font-size: 15px;
-      margin-top: 4px;
+      font-weight: 600;
+      margin-top: 6px;
     }
     .btn.primary:hover { background: #2f3d2e; }
     .hint { color: #888; font-size: 12px; margin-top: 5px; line-height: 1.6; }
@@ -101,7 +164,7 @@
     .preview-top select { width: auto; }
     .pages { width: max-content; margin: 0 auto; }
 
-    /* ===== 描寫頁 ===== */
+    /* ===== 描寫頁通用 ===== */
     .page {
       width: var(--page-w);
       height: var(--page-h);
@@ -119,31 +182,38 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 6mm;
+      gap: 4mm;
       border-bottom: 0.25mm solid #bcbcbc;
       margin-bottom: 3mm;
       font-family: "Noto Serif TC", "PMingLiU", serif;
     }
     .heading h1 {
       margin: 0;
-      font-size: 20pt;
+      font-size: 18pt;
       font-weight: normal;
-      letter-spacing: 2pt;
+      letter-spacing: 1.5pt;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       min-width: 0;
     }
-    .details { font-size: 11pt; white-space: nowrap; flex-shrink: 0; }
+    .details {
+      font-size: 10.5pt;
+      white-space: nowrap;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
     .blank {
       display: inline-block;
       height: 5mm;
       border-bottom: 0.2mm solid #999;
       vertical-align: bottom;
-      margin-right: 4mm;
+      margin-right: 3.5mm;
     }
-    .pageno { color: #999; font-size: 9pt; margin-left: 2mm; }
+    .pageno { color: #888; font-size: 9.5pt; margin-left: 2mm; font-variant-numeric: tabular-nums; }
 
+    /* ===== 中文方格 ===== */
     .grid {
       flex: 1;
       min-height: 0;
@@ -199,7 +269,27 @@
       line-height: 1;
     }
 
-    /* ===== 列印 ===== */
+    /* ===== 英文橫式四線格／格線 ===== */
+    .en-staves-container {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .en-row-box {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      position: relative;
+    }
+    .en-row-box svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ===== 列印模式 ===== */
     @media print {
       html, body { background: #fff; height: auto; }
       .app { display: block; height: auto; }
@@ -225,101 +315,225 @@
 <body>
 <div class="app">
   <aside class="panel">
+    <div style="margin-bottom: 8px;">
+      <a href="../index.html" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #555; text-decoration: none; padding: 3px 8px; border-radius: 6px; background: #f0f0ed; border: 1px solid #d8d8d3; transition: background 0.2s;" onmouseover="this.style.background='#e3e3de'" onmouseout="this.style.background='#f0f0ed'">
+        ⬅ 返回作品總覽
+      </a>
+    </div>
     <h2>灰底字描寫本生成器</h2>
-    <p class="sub">貼上課文，自動生成 A4 滿版描寫紙</p>
+    <p class="sub">貼上課文或單字，自動生成 A4 滿版描寫紙</p>
 
-    <fieldset>
-      <legend>內容</legend>
-      <label for="title">標題</label>
-      <input type="text" id="title" value="陋室銘　劉禹錫">
-      <label for="text">文字（可直接貼上整篇課文）</label>
-      <textarea id="text"></textarea>
-      <div class="btns">
-        <button class="btn" data-sample="loushi">範例：陋室銘</button>
-        <button class="btn" data-sample="heart">範例：心經</button>
-        <button class="btn" id="clear">清空</button>
-      </div>
-    </fieldset>
+    <!-- 分頁切換 (Tabs) -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tabChinese" type="button">🀄 中文方格描寫</button>
+      <button class="tab-btn" id="tabEnglish" type="button">🔤 英文橫式練習</button>
+    </div>
 
-    <fieldset>
-      <legend>版面</legend>
-      <div class="row">
-        <div>
-          <label for="orient">紙張</label>
-          <select id="orient">
-            <option value="landscape">A4 橫式</option>
-            <option value="portrait">A4 直式</option>
+    <!-- ===== 中文控制面板 ===== -->
+    <div id="panelChinese">
+      <fieldset>
+        <legend>內容</legend>
+        <label for="title">標題</label>
+        <input type="text" id="title" value="陋室銘　劉禹錫">
+        <label for="text">文字（可直接貼上整篇課文）</label>
+        <textarea id="text"></textarea>
+        <div class="btns">
+          <button class="btn" data-sample="loushi">範例：陋室銘</button>
+          <button class="btn" data-sample="heart">範例：心經</button>
+          <button class="btn" data-sample="dizigui">範例：弟子規</button>
+          <button class="btn" data-sample="chushibiao">範例：出師表</button>
+          <button class="btn" id="clear">清空</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>版面</legend>
+        <div class="row">
+          <div>
+            <label for="orient">紙張</label>
+            <select id="orient">
+              <option value="landscape">A4 橫式</option>
+              <option value="portrait">A4 直式</option>
+            </select>
+          </div>
+          <div>
+            <label for="dir">書寫方向</label>
+            <select id="dir">
+              <option value="v">直排（右至左）</option>
+              <option value="h">橫排（左至右）</option>
+            </select>
+          </div>
+        </div>
+        <label>格子大小</label>
+        <div class="btns" style="margin-top:0">
+          <button class="btn" data-preset="big">大格</button>
+          <button class="btn" data-preset="mid">中格</button>
+          <button class="btn" data-preset="small">小格</button>
+        </div>
+        <div class="row">
+          <div>
+            <label for="cols">橫向格數</label>
+            <input type="number" id="cols" min="3" max="40" value="20">
+          </div>
+          <div>
+            <label for="rows">縱向格數</label>
+            <input type="number" id="rows" min="3" max="40" value="13">
+          </div>
+        </div>
+        <div class="hint" id="cellInfo"></div>
+        <label for="guide">格線</label>
+        <select id="guide">
+          <option value="tian">田字格</option>
+          <option value="mi">米字格</option>
+          <option value="square">方格</option>
+          <option value="none">無格線</option>
+        </select>
+        <label class="check"><input type="checkbox" id="showHeader" checked>顯示標題列</label>
+        <label class="check"><input type="checkbox" id="showFields" checked>顯示姓名／座號／日期欄</label>
+        <label class="check"><input type="checkbox" id="showSign">顯示家長簽名欄</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>字體與灰階</legend>
+        <label for="font">字體</label>
+        <select id="font">
+          <optgroup label="硬筆楷書／教科書體">
+            <option value="kai">標楷體（系統字型）</option>
+            <option value="iansui" selected>芫荽體 Iansui（教育部字形・開源硬筆楷書）</option>
+            <option value="wenkai">霞鶩文楷 TC（開源行楷）</option>
+            <option value="klee">Klee One 克莉體（硬筆教科書楷體）</option>
+          </optgroup>
+          <optgroup label="行書／手寫書法體">
+            <option value="chenyuluoyan">辰宇落雁體（台灣手寫行書體）</option>
+            <option value="mashan">馬善政毛筆楷書（書法楷體）</option>
+            <option value="zhimang">智芒星行書（行雲流水）</option>
+            <option value="longcang">龍藏體（大氣行草）</option>
+            <option value="liujian">鍾齊流江毛草（草書字帖）</option>
+            <option value="yuji">佑字體 Yuji Syuku（手寫毛筆體）</option>
+          </optgroup>
+          <optgroup label="宋明／黑體">
+            <option value="serif">思源宋體／明體</option>
+            <option value="sans">思源黑體</option>
+          </optgroup>
+        </select>
+        <label for="scale">字的大小 <span class="val" id="scaleVal"></span></label>
+        <input type="range" id="scale" min="50" max="95" value="80">
+        <label for="gray">底字深淺 <span class="val" id="grayVal"></span></label>
+        <input type="range" id="gray" min="120" max="235" value="208">
+        <div class="hint">往右越淡。一般印表機建議 190–215。</div>
+      </fieldset>
+
+      <fieldset>
+        <legend>文字處理</legend>
+        <label class="check"><input type="checkbox" id="keepPunct" checked>保留標點符號（各占一格）</label>
+        <label class="check"><input type="checkbox" id="toFull" checked>半形標點轉全形、“ ”轉「 」</label>
+        <label class="check"><input type="checkbox" id="avoid" checked>行首標點併入上一格（避頭）</label>
+        <label class="check"><input type="checkbox" id="newPara" checked>每段另起一行</label>
+        <label class="check"><input type="checkbox" id="indent">段首空兩格</label>
+        <label for="mode">練習模式</label>
+        <select id="mode">
+          <option value="all">全部灰字描寫</option>
+          <option value="alt">一行描寫、一行空白</option>
+        </select>
+      </fieldset>
+    </div>
+
+    <!-- ===== 英文控制面板 ===== -->
+    <div id="panelEnglish" style="display: none;">
+      <fieldset>
+        <legend>內容</legend>
+        <label for="enTitle">標題</label>
+        <input type="text" id="enTitle" value="Grade 7 Vocabulary Practice">
+        <label for="enMode">練習模式</label>
+        <select id="enMode">
+          <option value="word" selected>單字練習模式（描寫＋抄寫）</option>
+          <option value="article_all">課文／句子／歌詞（全部灰字描寫）</option>
+          <option value="article_alt">課文／句子／歌詞（一行描寫、一行空白抄寫）</option>
+        </select>
+        <div id="enRepeatWrap">
+          <label for="enWordRepeat">每個單字描寫次數</label>
+          <select id="enWordRepeat">
+            <option value="1">1 次</option>
+            <option value="2" selected>2 次（推薦）</option>
+            <option value="3">3 次</option>
+            <option value="4">4 次</option>
           </select>
         </div>
-        <div>
-          <label for="dir">書寫方向</label>
-          <select id="dir">
-            <option value="v">直排（右至左）</option>
-            <option value="h">橫排（左至右）</option>
-          </select>
+        <label for="enText">英文內容（單字每行一個，可附詞性與中文）</label>
+        <textarea id="enText"></textarea>
+        <div class="btns">
+          <button class="btn" data-en-sample="vocab">範例：七年級單字</button>
+          <button class="btn" data-en-sample="beatles_letitbe">範例：Let It Be</button>
+          <button class="btn" data-en-sample="beatles_sun">範例：Here Comes the Sun</button>
+          <button class="btn" id="enClear">清空</button>
         </div>
-      </div>
-      <label>格子大小</label>
-      <div class="btns" style="margin-top:0">
-        <button class="btn" data-preset="big">大格</button>
-        <button class="btn" data-preset="mid">中格</button>
-        <button class="btn" data-preset="small">小格</button>
-      </div>
-      <div class="row">
-        <div>
-          <label for="cols">橫向格數</label>
-          <input type="number" id="cols" min="3" max="40" value="20">
+      </fieldset>
+
+      <fieldset>
+        <legend>版面</legend>
+        <div class="row">
+          <div>
+            <label for="enOrient">紙張</label>
+            <select id="enOrient">
+              <option value="portrait" selected>A4 直式</option>
+              <option value="landscape">A4 橫式</option>
+            </select>
+          </div>
+          <div>
+            <label for="enLineStyle">格線樣式</label>
+            <select id="enLineStyle">
+              <option value="fourline" selected>標準四線格（Four-line Stave）</option>
+              <option value="lined">雙線格／單行橫線格（Lined）</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label for="rows">縱向格數</label>
-          <input type="number" id="rows" min="3" max="40" value="13">
+        <label>行數預設</label>
+        <div class="btns" style="margin-top:0">
+          <button class="btn" data-en-preset="big">大格 (10行)</button>
+          <button class="btn" data-en-preset="mid">中格 (14行)</button>
+          <button class="btn" data-en-preset="small">小格 (18行)</button>
         </div>
-      </div>
-      <div class="hint" id="cellInfo"></div>
-      <label for="guide">格線</label>
-      <select id="guide">
-        <option value="tian">田字格</option>
-        <option value="mi">米字格</option>
-        <option value="square">方格</option>
-        <option value="none">無格線</option>
-      </select>
-      <label class="check"><input type="checkbox" id="showHeader" checked>顯示標題列</label>
-      <label class="check"><input type="checkbox" id="showFields" checked>顯示姓名／座號／日期欄</label>
-    </fieldset>
+        <label for="enRows">每頁行數（6～28 行）</label>
+        <input type="number" id="enRows" min="6" max="28" value="14">
+        <div class="hint" id="enRowInfo"></div>
+        <label class="check"><input type="checkbox" id="enShowHeader" checked>顯示標題列</label>
+        <label class="check"><input type="checkbox" id="enShowFields" checked>顯示姓名／座號／日期欄</label>
+        <label class="check"><input type="checkbox" id="enShowSign">顯示家長簽名欄</label>
+      </fieldset>
 
-    <fieldset>
-      <legend>字體與灰階</legend>
-      <label for="font">字體</label>
-      <select id="font">
-        <option value="kai">標楷體（系統字型）</option>
-        <option value="wenkai">霞鶩文楷（網路字型）</option>
-        <option value="serif">思源宋體／明體</option>
-        <option value="sans">思源黑體</option>
-      </select>
-      <label for="scale">字的大小 <span class="val" id="scaleVal"></span></label>
-      <input type="range" id="scale" min="50" max="95" value="80">
-      <label for="gray">底字深淺 <span class="val" id="grayVal"></span></label>
-      <input type="range" id="gray" min="120" max="235" value="208">
-      <div class="hint">往右越淡。一般印表機建議 190–215。</div>
-    </fieldset>
+      <fieldset>
+        <legend>字體與灰階</legend>
+        <label for="enFont">字體</label>
+        <select id="enFont">
+          <optgroup label="教學印刷手寫體（符合國中小標準，單層 a、g）">
+            <option value="andika" selected>Andika（標準教學印刷手寫體）</option>
+            <option value="comic">Comic Neue（活潑手寫印刷體）</option>
+          </optgroup>
+          <optgroup label="自然手寫風格（Natural Handwriting）">
+            <option value="patrick">Patrick Hand（清晰自然手寫）</option>
+            <option value="caveat">Caveat（隨性流暢手寫）</option>
+          </optgroup>
+          <optgroup label="連寫／草寫體（Cursive）">
+            <option value="dancing">Dancing Script（流暢連筆草寫）</option>
+            <option value="playwrite">Playwrite US Trad（美式習字草寫體）</option>
+          </optgroup>
+          <optgroup label="標準無襯線／襯線體">
+            <option value="notosans">Noto Sans（標準黑體）</option>
+            <option value="notoserif">Noto Serif（標準襯線體）</option>
+          </optgroup>
+        </select>
+        <label for="enScale">字的大小 <span class="val" id="enScaleVal"></span></label>
+        <input type="range" id="enScale" min="50" max="110" value="82">
+        <label for="enGray">底字深淺 <span class="val" id="enGrayVal"></span></label>
+        <input type="range" id="enGray" min="120" max="235" value="208">
+        <div class="hint">往右越淡。一般印表機建議 190–215。</div>
+      </fieldset>
+    </div>
 
-    <fieldset>
-      <legend>文字處理</legend>
-      <label class="check"><input type="checkbox" id="keepPunct" checked>保留標點符號（各占一格）</label>
-      <label class="check"><input type="checkbox" id="toFull" checked>半形標點轉全形、“ ”轉「 」</label>
-      <label class="check"><input type="checkbox" id="avoid" checked>行首標點併入上一格（避頭）</label>
-      <label class="check"><input type="checkbox" id="newPara" checked>每段另起一行</label>
-      <label class="check"><input type="checkbox" id="indent">段首空兩格</label>
-      <label for="mode">練習模式</label>
-      <select id="mode">
-        <option value="all">全部灰字描寫</option>
-        <option value="alt">一行描寫、一行空白</option>
-      </select>
-    </fieldset>
-
+    <!-- 統計與列印 -->
     <div class="stats" id="stats"></div>
     <button class="btn primary" id="print">列印／另存 PDF</button>
-    <div class="hint">列印時請選「縮放 100%」，並關閉「頁首及頁尾」。</div>
+    <div class="hint">列印時請選「縮放 100%」，並關閉「頁首及頁尾」。系統會自動將檔案名稱設定為標題。</div>
   </aside>
 
   <main class="preview">
@@ -338,7 +552,8 @@
 <script>
   const $ = id => document.getElementById(id);
 
-  const SAMPLES = {
+  // ===== 中文範例庫 =====
+  const SAMPLES_ZH = {
     loushi: {
       title: "陋室銘　劉禹錫",
       text: "山不在高，有仙則名。水不在深，有龍則靈。斯是陋室，惟吾德馨。苔痕上階綠，草色入簾青。談笑有鴻儒，往來無白丁。可以調素琴，閱金經。無絲竹之亂耳，無案牘之勞形。南陽諸葛廬，西蜀子雲亭。孔子云：「何陋之有？」"
@@ -346,25 +561,124 @@
     heart: {
       title: "般若波羅蜜多心經",
       text: "觀自在菩薩，行深般若波羅蜜多時，照見五蘊皆空，度一切苦厄。舍利子！色不異空，空不異色；色即是空，空即是色。受想行識，亦復如是。舍利子！是諸法空相，不生不滅，不垢不淨，不增不減。是故空中無色，無受想行識；無眼耳鼻舌身意，無色聲香味觸法；無眼界，乃至無意識界；無無明，亦無無明盡，乃至無老死，亦無老死盡；無苦集滅道，無智亦無得。以無所得故，菩提薩埵，依般若波羅蜜多故，心無罣礙。無罣礙故，無有恐怖，遠離顛倒夢想，究竟涅槃。三世諸佛，依般若波羅蜜多故，得阿耨多羅三藐三菩提。故知般若波羅蜜多，是大神咒，是大明咒，是無上咒，是無等等咒，能除一切苦，真實不虛。故說般若波羅蜜多咒，即說咒曰：揭諦，揭諦，波羅揭諦，波羅僧揭諦，菩提薩婆訶。"
+    },
+    dizigui: {
+      title: "弟子規　選讀",
+      text: "弟子規，聖人訓。首孝弟，次謹信。汎愛眾，而親仁。有餘力，則學文。\n父母呼，應勿緩。父母命，行勿懶。父母教，須敬聽。父母責，須順承。冬則溫，夏則凊。晨則省，昏則定。出必告，反必面。居有常，業無變。事雖小，勿擅為。苟擅為，子道虧。物雖小，勿私藏。苟私藏，親心傷。\n兄道友，弟道恭。兄弟睦，孝在中。財物輕，怨何生。言語忍，忿自泯。或飲食，或坐走。長者先，幼者後。長呼人，即代叫。人不在，己即到。\n朝起早，夜眠遲。老易至，惜此時。晨必盥，兼漱口。便溺回，輒淨手。冠必正，紐必結。襪與履，俱緊切。\n凡出言，信為先。詐與妄，奚可焉。話說多，不如少。惟其是，勿佞巧。凡道字，重且舒。勿急疾，勿模糊。\n凡是人，皆須愛。天同覆，地同載。行高者，名自高。人所重，非貌高。才大者，望自大。人所服，非言大。\n同是人，類不齊。流俗眾，仁者稀。果仁者，人多畏。言不諱，色不媚。能親仁，無限好。德日進，過日少。\n不力行，但學文。長浮華，成何人。但力行，不學文。任己見，昧理真。讀書法，有三到。心眼口，信皆要。"
+    },
+    chushibiao: {
+      title: "出師表　諸葛亮",
+      text: "先帝創業未半，而中道崩殂。今天下三分，益州疲弊，此誠危急存亡之秋也。然侍衛之臣不懈於內，忠志之士忘身於外者，蓋追先帝之殊遇，欲報之於陛下也。誠宜開張聖聽，以光先帝遺德，恢弘志士之氣，不宜妄自菲薄，引喻失義，以塞忠諫之路也。\n宮中府中，俱為一體，陟罰臧否，不宜異同。若有作姦犯科及為忠善者，宜付有司論其刑賞，以昭陛下平明之理，不宜偏私，使內外異法也。\n侍中、侍郎郭攸之、費禕、董允等，此皆良實，志慮忠純，是以先帝簡拔以遺陛下。愚以為宮中之事，事無大小，悉以咨之，然後施行，必能裨補闕漏，有所廣益。\n將軍向寵，性行淑均，曉暢軍事，試用於昔日，先帝稱之曰能，是以眾議舉寵為督。愚以為營中之事，悉以咨之，必能使行陣和睦，優劣得所。\n親賢臣，遠小人，此先漢所以興隆也；親小人，遠賢臣，此後漢所以傾頹也。先帝在時，每與臣論此事，未嘗不歎息痛恨於桓、靈也。侍中、尚書、長史、參軍，此悉貞良死節之臣，願陛下親之信之，則漢室之隆，可計日而待也。\n臣本布衣，躬耕於南陽，苟全性命於亂世，不求聞達於諸侯。先帝不以臣卑鄙，猥自枉屈，三顧臣於草廬之中，諮臣以當世之事，由是感激，遂許先帝以驅馳。後值傾覆，受任於敗軍之際，奉命於危難之間，爾來二十有一年矣。\n先帝知臣謹慎，故臨崩寄臣以大事也。受命以來，夙夜憂歎，恐託付不效，以傷先帝之明，故五月渡瀘，深入不毛。今南方已定，兵甲已足，當獎率三軍，北定中原，庶竭駑鈍，攘除姦凶，興復漢室，還於舊都。此臣所以報先帝而忠陛下之職分也。至於斟酌損益，進盡忠言，則攸之、禕、允之任也。\n願陛下託臣以討賊興復之效，不效則治臣之罪，以告先帝之靈。若無興德之言，則責攸之、禕、允等之慢，以彰其咎。陛下亦宜自謀，以諮諏善道，察納雅言，深追先帝遺詔。臣不勝受恩感激。今當遠離，臨表涕零，不知所言。"
     }
   };
 
-  const FONTS = {
-    kai: '"TW-Kai", "BiauKai", "DFKai-SB", "標楷體", "Kaiti TC", "STKaiti", "LXGW WenKai TC", serif',
+  // ===== 英文範例庫 =====
+  const SAMPLES_EN = {
+    vocab: {
+      title: "Grade 7 Vocabulary Practice",
+      mode: "word",
+      text: "family (n.) 家庭\nclassmate (n.) 同學\nteacher (n.) 老師\nstudent (n.) 學生\nfriend (n.) 朋友\nbreakfast (n.) 早餐\nlunch (n.) 午餐\ndinner (n.) 晚餐\nlibrary (n.) 圖書館\nclassroom (n.) 教室\nweekend (n.) 週末\nfavorite (adj.) 最喜愛的\nimportant (adj.) 重要的\ntogether (adv.) 一起\nbeautiful (adj.) 美麗的\ndifferent (adj.) 不同的\ndelicious (adj.) 美味的\nexercise (v./n.) 運動"
+    },
+    beatles_letitbe: {
+      title: "Let It Be - The Beatles",
+      mode: "article_alt",
+      text: "When I find myself in times of trouble, Mother Mary comes to me\nSpeaking words of wisdom, let it be.\nAnd in my hour of darkness she is standing right in front of me\nSpeaking words of wisdom, let it be.\nLet it be, let it be, let it be, let it be.\nWhisper words of wisdom, let it be.\nAnd when the broken hearted people living in the world agree\nThere will be an answer, let it be.\nFor though they may be parted, there is still a chance that they will see\nThere will be an answer, let it be."
+    },
+    beatles_sun: {
+      title: "Here Comes the Sun - The Beatles",
+      mode: "article_all",
+      text: "Here comes the sun, here comes the sun, and I say it's all right.\nLittle darling, it's been a long cold lonely winter.\nLittle darling, it feels like years since it's been here.\nHere comes the sun, here comes the sun, and I say it's all right.\nLittle darling, the smiles returning to the faces.\nLittle darling, it seems like years since it's been here.\nSun, sun, sun, here it comes.\nHere comes the sun, and I say it's all right."
+    }
+  };
+
+  // ===== 中文字型映射 =====
+  const FONTS_ZH = {
+    kai: '"TW-Kai", "BiauKai", "DFKai-SB", "標楷體", "Kaiti TC", "STKaiti", serif',
+    iansui: '"Iansui", "芫荽", "TW-Kai", "BiauKai", "DFKai-SB", serif',
     wenkai: '"LXGW WenKai TC", "BiauKai", "DFKai-SB", serif',
+    klee: '"Klee One", "LXGW WenKai TC", "TW-Kai", cursive, serif',
+    chenyuluoyan: '"ChenYuluoyan", "辰宇落雁體", cursive, sans-serif',
+    mashan: '"Ma Shan Zheng", cursive, serif',
+    zhimang: '"Zhi Mang Xing", cursive, serif',
+    longcang: '"Long Cang", cursive, serif',
+    liujian: '"Liu Jian Mao Cao", cursive, serif',
+    yuji: '"Yuji Syuku", serif',
     serif: '"Noto Serif TC", "PMingLiU", "Songti TC", serif',
     sans: '"Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif'
   };
 
-  const PRESETS = {
+  // ===== 英文字型映射 =====
+  const FONTS_EN = {
+    andika: '"Andika", sans-serif',
+    comic: '"Comic Neue", cursive, sans-serif',
+    patrick: '"Patrick Hand", cursive, sans-serif',
+    caveat: '"Caveat", cursive, sans-serif',
+    dancing: '"Dancing Script", cursive, sans-serif',
+    playwrite: '"Playwrite US Trad", cursive, sans-serif',
+    notosans: '"Noto Sans", sans-serif',
+    notoserif: '"Noto Serif", serif'
+  };
+
+  const PRESETS_ZH = {
     landscape: { big: [14, 9], mid: [20, 13], small: [26, 16] },
     portrait: { big: [10, 13], mid: [13, 18], small: [17, 23] }
+  };
+
+  const PRESETS_EN = {
+    portrait: { big: 10, mid: 14, small: 18 },
+    landscape: { big: 8, mid: 11, small: 14 }
   };
 
   const PUNCT = /[，。、；：？！「」『』（）《》〈〉…—．·～﹏]/;
   const CLOSE = /[，。、；：？！」』）》〉]/;
   const ALL_PUNCT = /[，。、；：？！「」『』（）《》〈〉…—．·～﹏,.;:?!()"'“”‘’]/g;
 
+  // 測量文字寬度的離線 Canvas
+  const _measureCanvas = document.createElement("canvas");
+  const _measureCtx = _measureCanvas.getContext("2d");
+  function measureMm(text, fontStr, fsMm) {
+    const pxSize = fsMm * 3.7795;
+    _measureCtx.font = `${pxSize}px ${fontStr}`;
+    return _measureCtx.measureText(text).width / 3.7795;
+  }
+
+  function escapeXml(unsafe) {
+    return String(unsafe).replace(/[<>&'"]/g, c => {
+      switch (c) {
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '&': return '&amp;';
+        case '\'': return '&apos;';
+        case '"': return '&quot;';
+      }
+    });
+  }
+
+  // 目前分頁：'zh' | 'en'
+  let currentTab = "zh";
+
+  // ===== 分頁切換邏輯 =====
+  $("tabChinese").addEventListener("click", () => switchTab("zh"));
+  $("tabEnglish").addEventListener("click", () => switchTab("en"));
+
+  function switchTab(tab) {
+    currentTab = tab;
+    $("tabChinese").classList.toggle("active", tab === "zh");
+    $("tabEnglish").classList.toggle("active", tab === "en");
+    $("panelChinese").style.display = tab === "zh" ? "block" : "none";
+    $("panelEnglish").style.display = tab === "en" ? "block" : "none";
+    render();
+  }
+
+  // ===== 動態設定文件標題（支援列印與另存 PDF 檔名） =====
+  function syncDocumentTitle() {
+    const isEn = currentTab === "en";
+    const rawTitle = (isEn ? $("enTitle").value : $("title").value).trim();
+    const cleanTitle = rawTitle || "未命名";
+    document.title = `${cleanTitle}(灰底字描寫本)`;
+  }
+
+  // ===== 中文文字正規化與斷行 =====
   function normalize(text, toFull, keepPunct) {
     text = text.replace(/\r\n?/g, "\n");
     if (toFull) {
@@ -399,42 +713,76 @@
     return out;
   }
 
-  function readSettings() {
-    return {
-      title: $("title").value.trim(),
-      text: $("text").value,
-      orient: $("orient").value,
-      vertical: $("dir").value === "v",
-      cols: Math.min(40, Math.max(3, parseInt($("cols").value) || 20)),
-      rows: Math.min(40, Math.max(3, parseInt($("rows").value) || 13)),
-      guide: $("guide").value,
-      showHeader: $("showHeader").checked,
-      showFields: $("showFields").checked,
-      font: FONTS[$("font").value],
-      scale: +$("scale").value / 100,
-      gray: +$("gray").value,
-      keepPunct: $("keepPunct").checked,
-      toFull: $("toFull").checked,
-      avoid: $("avoid").checked,
-      newPara: $("newPara").checked,
-      indent: $("indent").checked,
-      alt: $("mode").value === "alt"
-    };
+  // ===== 英文單字解析 =====
+  function parseWordLine(line) {
+    line = line.trim();
+    if (!line) return null;
+    if (line.includes("|")) {
+      const parts = line.split("|");
+      return { word: parts[0].trim(), note: parts.slice(1).join("|").trim() };
+    }
+    // 辨識開頭的英文單字或片語（如 "family (n.) 家庭" 或 "look forward to 期待"）
+    const m = line.match(/^([A-Za-z0-9\s\-'.?!/,]+?)(?:\s+([(\[（【].*|[\u4e00-\u9fa5].*))?$/);
+    if (m) {
+      return { word: m[1].trim(), note: (m[2] || "").trim() };
+    }
+    return { word: line, note: "" };
   }
 
-  function makeHeader(s, pageIndex, pageCount) {
+  // ===== 英文課文智慧斷詞換行 =====
+  function wrapEnglishText(text, maxLineWidthMm, fontStr, fsMm) {
+    const maxPx = maxLineWidthMm * 3.7795;
+    const pxSize = fsMm * 3.7795;
+    _measureCtx.font = `${pxSize}px ${fontStr}`;
+
+    const paras = text.split(/\r?\n/);
+    const lines = [];
+
+    for (const para of paras) {
+      const trimmed = para.trim();
+      if (!trimmed) continue;
+      const words = trimmed.split(/\s+/);
+      let curLine = "";
+
+      for (const w of words) {
+        const testLine = curLine ? `${curLine} ${w}` : w;
+        const testW = _measureCtx.measureText(testLine).width;
+        if (testW <= maxPx || !curLine) {
+          curLine = testLine;
+        } else {
+          lines.push(curLine);
+          curLine = w;
+        }
+      }
+      if (curLine) {
+        lines.push(curLine);
+      }
+    }
+    return lines;
+  }
+
+  // ===== 通用頁首產生器（支援家長簽名欄與緊湊寬度控制） =====
+  function makeHeader(title, showFields, showSign, pageIndex, pageCount) {
     const header = document.createElement("header");
     header.className = "heading";
     const h1 = document.createElement("h1");
-    h1.textContent = s.title || "　";
+    h1.textContent = title || "　";
     header.appendChild(h1);
     const details = document.createElement("div");
     details.className = "details";
-    if (s.showFields) {
-      details.innerHTML =
-        '姓名：<span class="blank" style="width:28mm"></span>' +
-        '座號：<span class="blank" style="width:12mm"></span>' +
-        '日期：<span class="blank" style="width:26mm;margin-right:0"></span>';
+    if (showFields) {
+      if (showSign) {
+        details.innerHTML =
+          '姓名：<span class="blank" style="width:20mm"></span>' +
+          '座號：<span class="blank" style="width:10mm"></span>' +
+          '日期：<span class="blank" style="width:20mm"></span>' +
+          '家長簽名：<span class="blank" style="width:22mm;margin-right:0"></span>';
+      } else {
+        details.innerHTML =
+          '姓名：<span class="blank" style="width:28mm"></span>' +
+          '座號：<span class="blank" style="width:12mm"></span>' +
+          '日期：<span class="blank" style="width:26mm;margin-right:0"></span>';
+      }
     }
     if (pageCount > 1) {
       const no = document.createElement("span");
@@ -446,8 +794,30 @@
     return header;
   }
 
-  function render() {
-    const s = readSettings();
+  // ===== 渲染：中文描寫本 =====
+  function renderZh() {
+    const s = {
+      title: $("title").value.trim(),
+      text: $("text").value,
+      orient: $("orient").value,
+      vertical: $("dir").value === "v",
+      cols: Math.min(40, Math.max(3, parseInt($("cols").value) || 20)),
+      rows: Math.min(40, Math.max(3, parseInt($("rows").value) || 13)),
+      guide: $("guide").value,
+      showHeader: $("showHeader").checked,
+      showFields: $("showFields").checked,
+      showSign: $("showSign").checked,
+      font: FONTS_ZH[$("font").value],
+      scale: +$("scale").value / 100,
+      gray: +$("gray").value,
+      keepPunct: $("keepPunct").checked,
+      toFull: $("toFull").checked,
+      avoid: $("avoid").checked,
+      newPara: $("newPara").checked,
+      indent: $("indent").checked,
+      alt: $("mode").value === "alt"
+    };
+
     const W = s.orient === "landscape" ? 297 : 210;
     const H = s.orient === "landscape" ? 210 : 297;
     $("page-style").textContent = `@page { size: A4 ${s.orient}; margin: 0; }`;
@@ -502,7 +872,7 @@
     for (let p = 0; p < pageCount; p++) {
       const page = document.createElement("section");
       page.className = "page" + (s.vertical ? " is-vertical" : "");
-      if (s.showHeader) page.appendChild(makeHeader(s, p, pageCount));
+      if (s.showHeader) page.appendChild(makeHeader(s.title, s.showFields, s.showSign, p, pageCount));
 
       const grid = document.createElement("div");
       grid.className = "grid guide-" + s.guide;
@@ -544,18 +914,236 @@
     }
   }
 
+  // ===== 渲染：英文橫式練習本 =====
+  function renderEn() {
+    const s = {
+      title: $("enTitle").value.trim(),
+      text: $("enText").value,
+      orient: $("enOrient").value,
+      mode: $("enMode").value,
+      wordRepeat: Math.min(4, Math.max(1, parseInt($("enWordRepeat").value) || 2)),
+      rows: Math.min(28, Math.max(6, parseInt($("enRows").value) || 14)),
+      lineStyle: $("enLineStyle").value,
+      showHeader: $("enShowHeader").checked,
+      showFields: $("enShowFields").checked,
+      showSign: $("enShowSign").checked,
+      fontKey: $("enFont").value,
+      fontFamily: FONTS_EN[$("enFont").value],
+      scale: +$("enScale").value / 100,
+      gray: +$("enGray").value
+    };
+
+    // 介面切換：單字模式顯示描寫次數選擇器，課文模式隱藏
+    $("enRepeatWrap").style.display = s.mode === "word" ? "block" : "none";
+
+    const W = s.orient === "landscape" ? 297 : 210;
+    const H = s.orient === "landscape" ? 210 : 297;
+    $("page-style").textContent = `@page { size: A4 ${s.orient}; margin: 0; }`;
+
+    const gridW = W - 16;
+    const gridH = H - 16 - (s.showHeader ? 17 : 0);
+    const rowH = gridH / s.rows;
+    const staveH = rowH * 0.70;
+    const gapTop = (rowH - staveH) / 2;
+    const y1 = gapTop;
+    const y2 = gapTop + staveH * (1 / 3);
+    const y3 = gapTop + staveH * (2 / 3);
+    const y4 = gapTop + staveH;
+    const fs = 0.92 * staveH * s.scale;
+    const grayColor = `rgb(${s.gray},${s.gray},${s.gray})`;
+
+    const pages = $("pages");
+    pages.style.setProperty("--page-w", W + "mm");
+    pages.style.setProperty("--page-h", H + "mm");
+
+    $("enRowInfo").textContent =
+      `每行高約 ${rowH.toFixed(1)} mm（四線格高約 ${staveH.toFixed(1)} mm），每頁 ${s.rows} 行`;
+    $("enScaleVal").textContent = Math.round(s.scale * 100) + "%";
+    $("enGrayVal").textContent = Math.round((s.gray - 120) / 115 * 100) + "%";
+
+    let pageCount = 1;
+    let rowsData = [];
+
+    if (s.mode === "word") {
+      // ===== 單字練習模式 =====
+      const items = s.text.split(/\r?\n/)
+        .map(parseWordLine)
+        .filter(Boolean);
+
+      const hasNotes = items.some(it => it.note);
+      const noteW = hasNotes ? 40 : 14;
+      const staveStartX = noteW;
+      const staveEndX = gridW - 1;
+
+      pageCount = Math.max(1, Math.ceil(items.length / s.rows));
+      $("stats").innerHTML =
+        `單字數：<b>${items.length}</b> 個<br>共 <b>${pageCount}</b> 頁，每頁 ${s.rows} 行（單字描寫 ${s.wordRepeat} 次＋後方抄寫）`;
+
+      for (let p = 0; p < pageCount; p++) {
+        const pageRows = [];
+        for (let r = 0; r < s.rows; r++) {
+          const itemIdx = p * s.rows + r;
+          const item = items[itemIdx];
+          if (item) {
+            // 計算單字重複位置
+            const wordW = measureMm(item.word, s.fontFamily, fs);
+            const gap = Math.max(10, wordW * 0.35);
+            const textItems = [];
+            let curX = staveStartX + 4;
+            for (let rep = 0; rep < s.wordRepeat; rep++) {
+              if (curX + wordW <= staveEndX - 12) {
+                textItems.push({ text: item.word, x: curX });
+                curX += wordW + gap;
+              }
+            }
+            pageRows.push({
+              noteText: item.note || "",
+              itemNum: itemIdx + 1,
+              staveStartX,
+              staveEndX,
+              textItems
+            });
+          } else {
+            // 頁面剩餘空白格線
+            pageRows.push({
+              noteText: null,
+              itemNum: null,
+              staveStartX,
+              staveEndX,
+              textItems: []
+            });
+          }
+        }
+        rowsData.push(pageRows);
+      }
+    } else {
+      // ===== 課文／句子／歌詞模式 =====
+      const wrappedLines = wrapEnglishText(s.text, gridW - 6, s.fontFamily, fs);
+      const totalWords = s.text.trim() ? (s.text.trim().match(/\b[A-Za-z0-9'-]+\b/g) || []).length : 0;
+
+      let displayLines = [];
+      if (s.mode === "article_alt") {
+        // 一行描寫、一行空白對照抄寫
+        displayLines = wrappedLines.flatMap(l => [l, null]);
+      } else {
+        displayLines = wrappedLines;
+      }
+
+      pageCount = Math.max(1, Math.ceil(displayLines.length / s.rows));
+      $("stats").innerHTML =
+        `總詞數：<b>${totalWords}</b> 詞，${wrappedLines.length} 行句子<br>共 <b>${pageCount}</b> 頁，每頁 ${s.rows} 行` +
+        (s.mode === "article_alt" ? "（一行描寫、一行空白抄寫）" : "（整篇灰底描寫）");
+
+      const staveStartX = 1;
+      const staveEndX = gridW - 1;
+
+      for (let p = 0; p < pageCount; p++) {
+        const pageRows = [];
+        for (let r = 0; r < s.rows; r++) {
+          const lineIdx = p * s.rows + r;
+          const lineText = displayLines[lineIdx];
+          const textItems = [];
+          if (typeof lineText === "string" && lineText.length) {
+            textItems.push({ text: lineText, x: staveStartX + 3 });
+          }
+          pageRows.push({
+            noteText: null,
+            itemNum: null,
+            staveStartX,
+            staveEndX,
+            textItems
+          });
+        }
+        rowsData.push(pageRows);
+      }
+    }
+
+    // 繪製英文頁面
+    pages.innerHTML = "";
+    for (let p = 0; p < pageCount; p++) {
+      const page = document.createElement("section");
+      page.className = "page";
+      if (s.showHeader) page.appendChild(makeHeader(s.title, s.showFields, s.showSign, p, pageCount));
+
+      const stavesContainer = document.createElement("div");
+      stavesContainer.className = "en-staves-container";
+
+      const pageRows = rowsData[p] || [];
+      for (const row of pageRows) {
+        const rowBox = document.createElement("div");
+        rowBox.className = "en-row-box";
+
+        let svgHtml = `<svg viewBox="0 0 ${gridW} ${rowH}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">`;
+
+        // 左側提示／編號
+        if (row.noteText !== null) {
+          const numPrefix = row.itemNum ? `${row.itemNum}. ` : "";
+          const fullNote = numPrefix + row.noteText;
+          svgHtml += `<text x="1" y="${y3}" font-family="'Noto Sans TC', sans-serif" font-size="3.2" fill="#444" dominant-baseline="alphabetic">${escapeXml(fullNote)}</text>`;
+          svgHtml += `<line x1="${row.staveStartX - 2.5}" y1="${y1}" x2="${row.staveStartX - 2.5}" y2="${y4}" stroke="#dedede" stroke-width="0.25" />`;
+        }
+
+        // 四線格左右封閉端線
+        svgHtml += `<line x1="${row.staveStartX}" y1="${y1}" x2="${row.staveStartX}" y2="${y4}" stroke="#c5c5c5" stroke-width="0.2" />`;
+        svgHtml += `<line x1="${row.staveEndX}" y1="${y1}" x2="${row.staveEndX}" y2="${y4}" stroke="#c5c5c5" stroke-width="0.2" />`;
+
+        if (s.lineStyle === "fourline") {
+          // 上線（頂線）
+          svgHtml += `<line x1="${row.staveStartX}" y1="${y1}" x2="${row.staveEndX}" y2="${y1}" stroke="#c5c5c5" stroke-width="0.2" />`;
+          // 中虛線（x-height）
+          svgHtml += `<line x1="${row.staveStartX}" y1="${y2}" x2="${row.staveEndX}" y2="${y2}" stroke="#b0b0b0" stroke-width="0.2" stroke-dasharray="1.5, 1.5" />`;
+          // 基線（柔和紅實線）
+          svgHtml += `<line x1="${row.staveStartX}" y1="${y3}" x2="${row.staveEndX}" y2="${y3}" stroke="#e56868" stroke-width="0.32" />`;
+          // 下線（底線）
+          svgHtml += `<line x1="${row.staveStartX}" y1="${y4}" x2="${row.staveEndX}" y2="${row.staveEndX}" y2="${y4}" stroke="#c5c5c5" stroke-width="0.2" />`;
+        } else {
+          // 雙線格／單行格：頂線＋基線
+          svgHtml += `<line x1="${row.staveStartX}" y1="${y1}" x2="${row.staveEndX}" y2="${y1}" stroke="#d5d5d5" stroke-width="0.2" />`;
+          svgHtml += `<line x1="${row.staveStartX}" y1="${y3}" x2="${row.staveEndX}" y2="${y3}" stroke="#888888" stroke-width="0.3" />`;
+        }
+
+        // 灰底描寫文字
+        if (row.textItems && row.textItems.length) {
+          for (const item of row.textItems) {
+            svgHtml += `<text x="${item.x}" y="${y3}" font-family='${s.fontFamily}' font-size="${fs}" fill="${grayColor}" dominant-baseline="alphabetic">${escapeXml(item.text)}</text>`;
+          }
+        }
+
+        svgHtml += `</svg>`;
+        rowBox.innerHTML = svgHtml;
+        stavesContainer.appendChild(rowBox);
+      }
+
+      page.appendChild(stavesContainer);
+      pages.appendChild(page);
+    }
+  }
+
+  // ===== 總渲染路由 =====
+  function render() {
+    syncDocumentTitle();
+    if (currentTab === "zh") {
+      renderZh();
+    } else {
+      renderEn();
+    }
+  }
+
   let timer;
   const scheduleRender = () => { clearTimeout(timer); timer = setTimeout(render, 120); };
 
   document.querySelectorAll(".panel input, .panel select, .panel textarea")
     .forEach(el => el.addEventListener("input", scheduleRender));
 
+  // 中文範例按鈕
   document.querySelectorAll("[data-sample]").forEach(btn =>
     btn.addEventListener("click", () => {
-      const sample = SAMPLES[btn.dataset.sample];
-      $("title").value = sample.title;
-      $("text").value = sample.text;
-      render();
+      const sample = SAMPLES_ZH[btn.dataset.sample];
+      if (sample) {
+        $("title").value = sample.title;
+        $("text").value = sample.text;
+        render();
+      }
     }));
 
   $("clear").addEventListener("click", () => {
@@ -565,25 +1153,60 @@
     $("text").focus();
   });
 
-  function applyPreset(name) {
-    const [c, r] = PRESETS[$("orient").value][name];
+  // 中文格子預設
+  function applyPresetZh(name) {
+    const [c, r] = PRESETS_ZH[$("orient").value][name];
     $("cols").value = c;
     $("rows").value = r;
     render();
   }
   document.querySelectorAll("[data-preset]").forEach(btn =>
-    btn.addEventListener("click", () => applyPreset(btn.dataset.preset)));
-  $("orient").addEventListener("change", () => applyPreset("mid"));
+    btn.addEventListener("click", () => applyPresetZh(btn.dataset.preset)));
+  $("orient").addEventListener("change", () => applyPresetZh("mid"));
 
+  // 英文範例按鈕
+  document.querySelectorAll("[data-en-sample]").forEach(btn =>
+    btn.addEventListener("click", () => {
+      const sample = SAMPLES_EN[btn.dataset.enSample];
+      if (sample) {
+        $("enTitle").value = sample.title;
+        $("enMode").value = sample.mode;
+        $("enText").value = sample.text;
+        render();
+      }
+    }));
+
+  $("enClear").addEventListener("click", () => {
+    $("enText").value = "";
+    $("enTitle").value = "";
+    render();
+    $("enText").focus();
+  });
+
+  // 英文行數預設
+  function applyPresetEn(name) {
+    const r = PRESETS_EN[$("enOrient").value][name];
+    $("enRows").value = r;
+    render();
+  }
+  document.querySelectorAll("[data-en-preset]").forEach(btn =>
+    btn.addEventListener("click", () => applyPresetEn(btn.dataset.enPreset)));
+  $("enOrient").addEventListener("change", () => applyPresetEn("mid"));
+
+  // 預覽縮放
   $("zoom").addEventListener("change", e => { $("pages").style.zoom = e.target.value; });
   $("pages").style.zoom = $("zoom").value;
 
+  // 列印／另存 PDF
   $("print").addEventListener("click", () => {
     render();
+    syncDocumentTitle();
     (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => window.print());
   });
 
-  $("text").value = SAMPLES.loushi.text;
+  // 初始內容載入
+  $("text").value = SAMPLES_ZH.loushi.text;
+  $("enText").value = SAMPLES_EN.vocab.text;
   render();
   if (document.fonts) document.fonts.ready.then(render);
 </script>
